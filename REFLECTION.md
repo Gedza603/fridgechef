@@ -1,38 +1,42 @@
 # Reflection
 
-**What I built, and how I scoped it.** FridgeChef does one job: turn a photo of a fridge
-or cupboard into recipes you can actually cook. Four screens cover the whole loop — home,
-scan, scan detail, recipe detail — and nothing outside "photo → ingredients → recipes →
-favourites" made it in. Worth naming honestly: the scope arrived as a fairly complete
-spec upfront rather than something I narrowed down myself through iteration, so the "cut
-it down to one thing" exercise didn't really happen here the way it's meant to.
+**What I built and how I scoped it down**
+I built FridgeChef, an app where you take a picture of your fridge and it tells you what
+you can cook with what's in there. It's basically 4 pages: home, the scan page, a page
+for each scan, and a page for each saved recipe. That's it, I didn't add extra stuff.
+Honestly though, I didn't really "scope it down" myself since I already had a pretty
+detailed plan for what I wanted before I started, so I kind of skipped that step of
+narrowing it down.
 
-**Persistence.** I chose `localStorage` over IndexedDB, cookies, and sessionStorage.
-Cookies cap out around 4KB and were designed to travel with HTTP requests this app never
-makes. sessionStorage dies with the tab, which fails the core requirement outright.
-IndexedDB would handle many large photos better — native Blob storage, a much bigger
-quota — but that headroom isn't needed for one person's occasional scans, and it trades a
-one-line synchronous API for async boilerplate everywhere. `localStorage` matched how the
-app actually reads (once, on mount) and writes (on discrete user actions), so simplicity
-won.
+**Persistence decision**
+I went with localStorage instead of IndexedDB, cookies, or sessionStorage. Cookies are
+way too small (like 4KB) and are meant for sending to a server anyway, which this app
+doesn't have. sessionStorage deletes everything when you close the tab, which is
+literally the opposite of what I need. IndexedDB is more powerful and can hold way more
+data, but it's a lot more complicated to use (everything's async) and I don't need that
+much storage for just a few scans and recipes. localStorage was simple and did exactly
+what I needed.
 
-**A technique that changed the outcome.** Writing `docs/route-handlers.md`, I fetched the
-live nextjs.org/docs Route Handlers page instead of writing from memory, and pasted the
-actual current examples in. That's what confirmed `app/api/detect` and `app/api/recipes`
-were using the right shape — `async POST(request: Request)`, `await request.json()`,
-`NextResponse.json()` — instead of me assuming a pattern that training data might have
-gotten subtly stale on.
+**A moment that actually mattered**
+When I was writing the docs file about Next.js route handlers, instead of just writing
+what I thought I remembered about them, I actually pulled the real docs from nextjs.org
+and used the real code examples. That's how I found out my API routes were set up the
+right way (using `request.json()` and `NextResponse.json()`) instead of just guessing and
+hoping it was right.
 
-**Design pass.** I didn't run a separate, directed design pass — the emerald/rounded-card
-look was set during the single initial build rather than iterated afterward with explicit
-tone direction. That's a real gap against the intended workflow, not a stylistic choice.
+**Design pass**
+Ngl I didn't really do a separate design pass. The green rounded-card look just kind of
+happened while I was building everything else instead of me going back and intentionally
+redoing the style.
 
-**Harder than a plain-HTML app.** Client-side persistence in React fights you in ways
-static HTML never does: `useEffect` calling `setState` to hydrate from `localStorage` on
-mount trips ESLint's `set-state-in-effect` rule, and dynamic routes (`/scans/[id]`) need
-`useParams()` instead of server-passed `params` since the data only exists in the
-browser. None of that exists when a page is just HTML.
+**What was harder than the plain HTML site**
+Way harder than plain HTML because now stuff has to "remember" things after you close the
+tab, so I had to deal with hydration issues (like ESLint complaining about setting state
+inside useEffect) and dynamic routes needing `useParams()` instead of just getting the id
+handed to you. None of that is a problem when it's just a static HTML page.
 
-**Next time.** Keep: fetching real docs before writing code that depends on them. Change:
-writing `CLAUDE.md` and committing per-feature from the start, not bolted on after the
-whole app was already built in one pass.
+**What I'd do differently next time**
+I'd actually look up real docs before writing code that depends on them, like I did with
+the route handlers thing. I'd also make CLAUDE.md and commit after each feature from the
+start instead of building the whole thing in one big go and adding that stuff after the
+fact.
