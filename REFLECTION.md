@@ -1,55 +1,38 @@
-# Persistence decision
+# Reflection
 
-> Note on process: this write-up documents the reasoning behind a decision that was
-> actually made during initial planning, but wasn't captured in writing until after the
-> app was built. It's included here so the trade-offs are on record, even though the
-> intended order (reflect first, then build) wasn't followed.
+**What I built, and how I scoped it.** FridgeChef does one job: turn a photo of a fridge
+or cupboard into recipes you can actually cook. Four screens cover the whole loop — home,
+scan, scan detail, recipe detail — and nothing outside "photo → ingredients → recipes →
+favourites" made it in. Worth naming honestly: the scope arrived as a fairly complete
+spec upfront rather than something I narrowed down myself through iteration, so the "cut
+it down to one thing" exercise didn't really happen here the way it's meant to.
 
-## The question
+**Persistence.** I chose `localStorage` over IndexedDB, cookies, and sessionStorage.
+Cookies cap out around 4KB and were designed to travel with HTTP requests this app never
+makes. sessionStorage dies with the tab, which fails the core requirement outright.
+IndexedDB would handle many large photos better — native Blob storage, a much bigger
+quota — but that headroom isn't needed for one person's occasional scans, and it trades a
+one-line synchronous API for async boilerplate everywhere. `localStorage` matched how the
+app actually reads (once, on mount) and writes (on discrete user actions), so simplicity
+won.
 
-I'm building a small single-user app that runs only in my browser on my own machine.
-There's no server, no database, and no login. I need whatever the user creates to still
-be there after they close the tab and come back. What are my options, and which one fits
-best?
+**A technique that changed the outcome.** Writing `docs/route-handlers.md`, I fetched the
+live nextjs.org/docs Route Handlers page instead of writing from memory, and pasted the
+actual current examples in. That's what confirmed `app/api/detect` and `app/api/recipes`
+were using the right shape — `async POST(request: Request)`, `await request.json()`,
+`NextResponse.json()` — instead of me assuming a pattern that training data might have
+gotten subtly stale on.
 
-## Options considered
+**Design pass.** I didn't run a separate, directed design pass — the emerald/rounded-card
+look was set during the single initial build rather than iterated afterward with explicit
+tone direction. That's a real gap against the intended workflow, not a stylistic choice.
 
-**sessionStorage** — same API as localStorage, but cleared when the tab closes. Ruled out
-immediately: it fails the core requirement (data must survive closing the tab).
+**Harder than a plain-HTML app.** Client-side persistence in React fights you in ways
+static HTML never does: `useEffect` calling `setState` to hydrate from `localStorage` on
+mount trips ESLint's `set-state-in-effect` rule, and dynamic routes (`/scans/[id]`) need
+`useParams()` instead of server-passed `params` since the data only exists in the
+browser. None of that exists when a page is just HTML.
 
-**Cookies** — persist across sessions, but capped at ~4KB total per domain and were
-designed to be sent with every HTTP request. FridgeChef stores fridge photos as base64
-images, which can be hundreds of KB each — cookies aren't remotely large enough, and
-since there's no server, the "sent with every request" behavior is just wasted overhead.
-
-**localStorage** — a synchronous key-value store, strings only, roughly 5–10MB per
-origin depending on the browser. Simple `getItem`/`setItem` API, no setup, works
-identically in every browser.
-
-**IndexedDB** — an asynchronous, transactional database in the browser. Much larger quota
-(typically hundreds of MB to low GB, tied to available disk space), and it can store
-binary data (`Blob`) natively instead of forcing everything through base64 text, which is
-~33% more space-efficient for images. The trade-off is API complexity: every read/write
-is asynchronous and event-based (or needs a wrapper library like `idb`) instead of a
-one-line synchronous call.
-
-**File System Access API** — lets the app save data as a real file the user picks on
-disk. Rejected: inconsistent browser support (no Firefox support), and it asks the user
-to manage files/folders directly, which doesn't fit a "just works" personal tool.
-
-## Decision: localStorage
-
-**Why it fits:** FridgeChef's data is small in both volume and shape — a handful of
-scans (each one photo + a short ingredient list) and a handful of favourite recipes
-(structured text, no binary data beyond the scan photos themselves). That's well within
-localStorage's size limits for realistic personal use (occasional scans, not hundreds of
-saved photos). The synchronous API also matched how the app is actually used: reads
-happen once on page load to hydrate a React hook (`useScans`, `useRecipes`), and writes
-happen on discrete user actions (save scan, delete recipe) — there's no need for
-transactions, indexes, or background writes that would justify IndexedDB's complexity.
-
-**The trade-off I'm accepting:** if someone saved a large number of high-resolution
-photos, they could eventually hit localStorage's quota, and IndexedDB would handle that
-better and more efficiently (native Blob storage vs. base64 bloat). For a small
-single-user tool, that scale isn't the expected use case, so the simplicity of
-`localStorage` (see `lib/storage.ts`) won out over the headroom of IndexedDB.
+**Next time.** Keep: fetching real docs before writing code that depends on them. Change:
+writing `CLAUDE.md` and committing per-feature from the start, not bolted on after the
+whole app was already built in one pass.

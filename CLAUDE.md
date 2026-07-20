@@ -47,3 +47,19 @@ docs/           cited framework reference material
 
 - `npm run dev` — start locally
 - `npm run build` / `npm run lint` — must both pass clean before committing
+
+## Working rules for this repo
+
+Rules the agent was actually asked to follow while building this project:
+
+- **One feature per commit.** Each stable, working unit of change (docs, a feature, a
+  fix) gets its own commit — never batch unrelated work into one commit "to save time."
+- **Verify before committing.** `npm run lint` and `npm run build` must both pass clean
+  before a commit is made, not after.
+- **Never fabricate history.** If a change wasn't actually built incrementally, say so —
+  don't rewrite git history to look like a workflow that didn't happen.
+- **Cite, don't guess, framework behaviour.** When code depends on a specific Next.js
+  API (e.g. Route Handlers), fetch the real docs page and quote it in `docs/` with a
+  source URL, rather than relying on training-data memory of the API shape.
+- **No destructive git ops without asking.** No `push --force`, `reset --hard`, or
+  history rewrites on shared branches without explicit confirmation first.
