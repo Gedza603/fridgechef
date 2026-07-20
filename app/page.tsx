@@ -1,15 +1,36 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useScans } from "@/hooks/useScans";
 import { useRecipes } from "@/hooks/useRecipes";
 import { ScanCard } from "@/components/ScanCard";
 import { RecipeCard } from "@/components/RecipeCard";
 import { EmptyState } from "@/components/EmptyState";
+import type { Scan } from "@/types/scan";
+import type { Recipe } from "@/types/recipe";
+
+function matches(query: string, name: string, ingredients: string[]): boolean {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return name.toLowerCase().includes(q) || ingredients.some((i) => i.toLowerCase().includes(q));
+}
 
 export default function Home() {
   const { scans, isLoaded: scansLoaded } = useScans();
   const { recipes, isLoaded: recipesLoaded } = useRecipes();
+  const [query, setQuery] = useState("");
+
+  const filteredScans = useMemo(
+    () => scans.filter((s: Scan) => matches(query, s.name, s.ingredients)),
+    [scans, query]
+  );
+  const filteredRecipes = useMemo(
+    () => recipes.filter((r: Recipe) => matches(query, r.title, r.ingredients)),
+    [recipes, query]
+  );
+
+  const hasAnyData = scans.length > 0 || recipes.length > 0;
 
   return (
     <div className="space-y-14">
@@ -29,6 +50,21 @@ export default function Home() {
           Scan Fridge
         </Link>
       </section>
+
+      {hasAnyData && (
+        <div className="relative">
+          <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" aria-hidden>
+            🔍
+          </span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search scans and recipes by name or ingredient…"
+            className="w-full rounded-full border border-zinc-300 bg-white py-3 pl-11 pr-4 text-sm text-zinc-900 outline-none transition-colors focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50 dark:focus:ring-emerald-900/40"
+          />
+        </div>
+      )}
 
       <section className="space-y-4">
         <div className="flex items-center justify-between">
@@ -53,9 +89,11 @@ export default function Home() {
               </Link>
             }
           />
+        ) : filteredScans.length === 0 ? (
+          <EmptyState icon="🔍" message={`No scans match "${query}".`} />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {scans.map((scan) => (
+            {filteredScans.map((scan) => (
               <ScanCard key={scan.id} scan={scan} />
             ))}
           </div>
@@ -67,9 +105,11 @@ export default function Home() {
 
         {!recipesLoaded ? null : recipes.length === 0 ? (
           <EmptyState icon="⭐" message="No favourite recipes yet." />
+        ) : filteredRecipes.length === 0 ? (
+          <EmptyState icon="🔍" message={`No recipes match "${query}".`} />
         ) : (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {recipes.map((recipe) => (
+            {filteredRecipes.map((recipe) => (
               <RecipeCard key={recipe.id} recipe={recipe} href={`/recipes/${recipe.id}`} />
             ))}
           </div>
