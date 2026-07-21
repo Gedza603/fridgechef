@@ -1,5 +1,7 @@
 # FridgeChef
 
+_Turing College submission: BAI.1.08_
+
 Snap a photo of your fridge or cupboard and discover meals you can cook right now with what
 you already have. No backend, no auth, no database — everything is stored in your browser's
 `localStorage`.
