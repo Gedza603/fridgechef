@@ -16,6 +16,10 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
+## Screenshot
+
+![FridgeChef homepage](docs/screenshot.png)
+
 ## AI setup
 
 Ingredient detection (`/api/detect`) and recipe generation (`/api/recipes`) are Next.js route
